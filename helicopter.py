@@ -1,4 +1,5 @@
 import sprites
+import os
 
 
 class Helicopter(object):

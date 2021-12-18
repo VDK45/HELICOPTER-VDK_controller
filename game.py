@@ -6,6 +6,18 @@ import sprites
 import random
 import server
 import threading
+import os
+
+
+def resource_path(relative_path):
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 # initialize server
 thread1 = threading.Thread(target=server.run, args=())
@@ -22,7 +34,8 @@ display_height = 600
 game_display = pygame.display.set_mode((display_width, display_height))
 
 # 8 bit madness font can be downloaded from here: http://www.dafont.com/8-bit-madness.font
-font = "8-Bit-Madness.ttf"
+font_m = resource_path("data/8-Bit-Madness.ttf")
+font = font_m
 
 
 # text rendering function
@@ -31,6 +44,7 @@ def message_to_screen(message, textfont, size, color):
     my_message = my_font.render(message, 0, color)
 
     return my_message
+
 
 # colors
 white = (255, 255, 255)
@@ -50,13 +64,14 @@ clock = pygame.time.Clock()
 FPS = 15
 
 # player variables
-player = helicopter.Helicopter(100, display_height/2-40)
+player = helicopter.Helicopter(100, display_height / 2 - 40)
 moving = True
 godmode = False
 
 # score variables
 score = 0
-highscore_file = open('highscore.dat', "r")
+high_score = resource_path("data/highscore.dat")
+highscore_file = open(high_score, "r")
 highscore_int = int(highscore_file.read())
 
 # cloud variables
@@ -64,7 +79,7 @@ cloud_x = 800
 cloud_y = random.randint(0, 400)
 
 # enemy helicopter variables
-enemy_heli = enemy_heli.EnemyHeli(-100, display_height/2-40)
+enemy_heli = enemy_heli.EnemyHeli(-100, display_height / 2 - 40)
 enemy_heli_alive = False
 
 # boat variables
@@ -92,25 +107,32 @@ bullets = []
 bombs = []
 
 # sounds
-shoot = pygame.mixer.Sound('sounds/shoot.wav')
-pop = pygame.mixer.Sound('sounds/pop.wav')
-bomb = pygame.mixer.Sound('sounds/bomb.wav')
-explosion = pygame.mixer.Sound('sounds/explosion.wav')
-explosion2 = pygame.mixer.Sound('sounds/explosion2.wav')
-select = pygame.mixer.Sound('sounds/select.wav')
-select2 = pygame.mixer.Sound('sounds/select2.wav')
-alert = pygame.mixer.Sound('sounds/alert.wav')
-whoosh = pygame.mixer.Sound('sounds/whoosh.wav')
+shoot = resource_path('sounds/shoot.wav')
+shoot = pygame.mixer.Sound(shoot)
+pop = resource_path('sounds/pop.wav')
+pop = pygame.mixer.Sound(pop)
+bomb = resource_path('sounds/bomb.wav')
+bomb = pygame.mixer.Sound(bomb)
+explosion = resource_path('sounds/explosion.wav')
+explosion = pygame.mixer.Sound(explosion)
+explosion2 = resource_path('sounds/explosion2.wav')
+explosion2 = pygame.mixer.Sound(explosion2)
+select = resource_path('sounds/select.wav')
+select = pygame.mixer.Sound(select)
+select2 = resource_path('sounds/select2.wav')
+select2 = pygame.mixer.Sound(select2)
+alert = resource_path('sounds/alert.wav')
+alert = pygame.mixer.Sound(alert)
+whoosh = resource_path('sounds/whoosh.wav')
+whoosh = pygame.mixer.Sound(whoosh)
 
 
 # main menu
 def main_menu():
-
     global cloud_x
     global cloud_y
-
     menu = True
-
+    player = helicopter.Helicopter(300, 300)
     selected = "play"
 
     while menu:
@@ -153,7 +175,7 @@ def main_menu():
         controls_1 = message_to_screen("Download VDK_controller!", font, 30, black)
         controls_2 = message_to_screen("For game controls:".encode(), font, 30, black)
         controls_3 = message_to_screen("use WASD to move, SPACE to shoot,", font, 30, black)
-        controls_4 = message_to_screen("SHIFT to drop bombs", font, 30, black)
+        controls_4 = message_to_screen("SHIFT or B to start missile", font, 30, black)
         if selected == "play":
             play = message_to_screen("PLAY", font, 75, white)
         else:
@@ -168,16 +190,17 @@ def main_menu():
         # quit_rect = game_quit.get_rect()
 
         # drawing text
-        game_display.blit(title, (display_width/2 - (title_rect[2]/2), 40))
-        game_display.blit(controls_1, (display_width/2 - (controls_1_rect[2]/2), 120))
-        game_display.blit(controls_2, (display_width/2 - (controls_2_rect[2]/2), 150))
-        game_display.blit(controls_3, (display_width/2 - (controls_3_rect[2]/2), 280))
-        game_display.blit(controls_4, (display_width/2 - (controls_4_rect[2]/2), 310))
-        game_display.blit(play, (display_width/2 - (play_rect[2]/2), 200))
-        # game_display.blit(game_quit, (display_width/2 - (quit_rect[2]/2), 260))
+        game_display.blit(title, (display_width / 2 - (title_rect[2] / 2), 40))
+        game_display.blit(controls_1, (display_width / 2 - (controls_1_rect[2] / 2), 120))
+        game_display.blit(controls_2, (display_width / 2 - (controls_2_rect[2] / 2), 150))
+        game_display.blit(controls_3, (display_width / 2 - (controls_3_rect[2] / 2), 280))
+        game_display.blit(controls_4, (display_width / 2 - (controls_4_rect[2] / 2), 310))
+        game_display.blit(play, (display_width / 2 - (play_rect[2] / 2), 200))
         # drawing ocean
         pygame.draw.rect(game_display, blue, (0, 500, 800, 100))
+        player.player_init()
 
+        game_display.blit(player.current, (320, 370))
         pygame.display.update()
         pygame.display.set_caption("HELICOPTER running at " + str(int(clock.get_fps())) + " frames per second.")
         clock.tick(FPS)
@@ -185,7 +208,6 @@ def main_menu():
 
 # create a game loop
 def game_loop():
-
     global spaceship_x
     global spaceship_y
     global spaceship_alive
@@ -223,7 +245,7 @@ def game_loop():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     if score > highscore_int:
-                        highscore_file = open('highscore.dat', "w")
+                        highscore_file = open(high_score, "w")
                         highscore_file.write(str(score))
                         highscore_file.close()
                     server.stop()
@@ -234,7 +256,7 @@ def game_loop():
                         pygame.mixer.Sound.play(select2)
                         if game_over_selected == "play again":
                             if score > highscore_int:
-                                highscore_file = open('highscore.dat', "w")
+                                highscore_file = open(high_score, "w")
                                 highscore_file.write(str(score))
                                 highscore_file.close()
                             game_over = False
@@ -258,7 +280,7 @@ def game_loop():
                             warning_counter = 0
 
                             player.wreck_start = False
-                            player.y = display_height/2-40
+                            player.y = display_height / 2 - 40
                             player.x = 100
                             player.wrecked = False
                             player.health = 3
@@ -274,7 +296,7 @@ def game_loop():
                 pygame.mixer.Sound.play(select2)
                 if game_over_selected == "play again":
                     if score > highscore_int:
-                        highscore_file = open('highscore.dat', "w")
+                        highscore_file = open(high_score, "w")
                         highscore_file.write(str(score))
                         highscore_file.close()
                     game_over = False
@@ -317,9 +339,9 @@ def game_loop():
             your_score_rect = your_score.get_rect()
             play_again_rect = play_again.get_rect()
 
-            game_display.blit(game_over_text, (display_width/2 - game_over_rect[2]/2, 40))
-            game_display.blit(your_score, (display_width/2 - (your_score_rect[2]/2+5), 100))
-            game_display.blit(play_again, (display_width/2 - play_again_rect[2]/2, 200))
+            game_display.blit(game_over_text, (display_width / 2 - game_over_rect[2] / 2, 40))
+            game_display.blit(your_score, (display_width / 2 - (your_score_rect[2] / 2 + 5), 100))
+            game_display.blit(play_again, (display_width / 2 - play_again_rect[2] / 2, 200))
 
             pygame.display.update()
             pygame.display.set_caption("HELICOPTER running at " + str(int(clock.get_fps())) + " frames per second.")
@@ -330,7 +352,7 @@ def game_loop():
 
             if event.type == pygame.QUIT:
                 if score > highscore_int:
-                    highscore_file = open('highscore.dat', "w")
+                    highscore_file = open(high_score, "w")
                     highscore_file.write(str(score))
                     highscore_file.close()
                 server.stop()
@@ -446,7 +468,7 @@ def game_loop():
         # rendering bullets
         if not player.wreck_start and not player.wrecked:
             for draw_bullet in bullets:
-                pygame.draw.rect(game_display, black, (draw_bullet[0]+90, draw_bullet[1]+40, 10, 10))
+                pygame.draw.rect(game_display, black, (draw_bullet[0] + 90, draw_bullet[1] + 40, 10, 10))
             for move_bullet in range(len(bullets)):
                 bullets[move_bullet][0] += 40
             for del_bullet in bullets:
@@ -456,9 +478,10 @@ def game_loop():
         # rendering bombs
         if not player.wreck_start and not player.wrecked:
             for draw_bomb in bombs:
-                pygame.draw.rect(game_display, black, (draw_bomb[0]+55, draw_bomb[1]+70, 20, 20))
+                pygame.draw.rect(game_display, black, (draw_bomb[0] + 85, draw_bomb[1] + 60, 15, 7))
             for move_bomb in range(len(bombs)):
-                bombs[move_bomb][1] += 20
+                bombs[move_bomb][1] += 15
+                bombs[move_bomb][0] += 15
             for del_bomb in bombs:
                 if del_bomb[1] > 600:
                     bombs.remove(del_bomb)
@@ -466,8 +489,8 @@ def game_loop():
         # rendering enemy bullets
         if not player.wreck_start and not player.wrecked and not game_over:
             for draw_bullet in enemy_heli.bullets:
-                pygame.draw.rect(game_display, gray, (draw_bullet[0], draw_bullet[1]+40, 40, 10))
-                pygame.draw.rect(game_display, red, (draw_bullet[0]+30, draw_bullet[1]+40, 10, 10))
+                pygame.draw.rect(game_display, gray, (draw_bullet[0], draw_bullet[1] + 40, 40, 10))
+                pygame.draw.rect(game_display, red, (draw_bullet[0] + 30, draw_bullet[1] + 40, 10, 10))
             for move_bullet in range(len(enemy_heli.bullets)):
                 enemy_heli.bullets[move_bullet][0] -= 15
             for del_bullet in enemy_heli.bullets:
@@ -477,7 +500,7 @@ def game_loop():
         # rendering boat bullets
         if not player.wreck_start and not player.wrecked and not game_over:
             for draw_bullet in boat.bullets:
-                pygame.draw.rect(game_display, gray, (draw_bullet[0]+40, draw_bullet[1]+30, 20, 20))
+                pygame.draw.rect(game_display, gray, (draw_bullet[0] + 40, draw_bullet[1] + 30, 20, 20))
             for move_bullet in range(len(boat.bullets)):
                 boat.bullets[move_bullet][0] -= 10
                 boat.bullets[move_bullet][1] -= 10
@@ -487,27 +510,28 @@ def game_loop():
 
         # draw randomly positioned balloons, pop if they hit any bullet or bombs
         for pop_balloon in bullets:
-            if balloon_x < pop_balloon[0]+90 < balloon_x+70 and balloon_y < pop_balloon[1]+40 < balloon_y+100:
+            if balloon_x < pop_balloon[0] + 90 < balloon_x + 70 and balloon_y < pop_balloon[1] + 40 < balloon_y + 100:
                 pygame.mixer.Sound.play(pop)
                 bullets.remove(pop_balloon)
-                balloon_x = 800-870
+                balloon_x = 800 - 870
                 score += 50
-            elif balloon_x < pop_balloon[0]+100 < balloon_x+70 and balloon_y < pop_balloon[1]+50 < balloon_y+100:
+            elif balloon_x < pop_balloon[0] + 100 < balloon_x + 70 and balloon_y < pop_balloon[
+                1] + 50 < balloon_y + 100:
                 pygame.mixer.Sound.play(pop)
                 bullets.remove(pop_balloon)
-                balloon_x = 800-870
+                balloon_x = 800 - 870
                 score += 50
 
         for pop_balloon in bombs:
-            if balloon_x < pop_balloon[0]+55 < balloon_x+70 and balloon_y < pop_balloon[1]+70 < balloon_y+100:
+            if balloon_x < pop_balloon[0] + 55 < balloon_x + 70 and balloon_y < pop_balloon[1] + 70 < balloon_y + 100:
                 pygame.mixer.Sound.play(pop)
                 bombs.remove(pop_balloon)
-                balloon_x = 800-870
+                balloon_x = 800 - 870
                 score += 50
-            elif balloon_x < pop_balloon[0]+75 < balloon_x+70 and balloon_y < pop_balloon[1]+90 < balloon_y+100:
+            elif balloon_x < pop_balloon[0] + 75 < balloon_x + 70 and balloon_y < pop_balloon[1] + 90 < balloon_y + 100:
                 pygame.mixer.Sound.play(pop)
                 bombs.remove(pop_balloon)
-                balloon_x = 800-870
+                balloon_x = 800 - 870
                 score += 50
 
         # spawn spaceship randomly
@@ -520,7 +544,7 @@ def game_loop():
             if warning_once:
                 pygame.mixer.Sound.play(alert)
                 warning_once = False
-            game_display.blit(warning_message, (750, spaceship_y-15))
+            game_display.blit(warning_message, (750, spaceship_y - 15))
             if warning_counter > 45:
                 pygame.mixer.Sound.play(whoosh)
                 spaceship_alive = True
@@ -533,7 +557,7 @@ def game_loop():
         # spaceship movement
         if spaceship_alive:
             spaceship_x -= 30
-        if spaceship_x < 0-100:
+        if spaceship_x < 0 - 100:
             spaceship_hit_player = False
             spaceship_alive = False
             spaceship_x = 800
@@ -556,10 +580,10 @@ def game_loop():
 
         # enemy-player bullet collision detection
         for hit_enemy_heli in bullets:
-            if enemy_heli.x < hit_enemy_heli[0]+90 < enemy_heli.x+100 \
-               or enemy_heli.x < hit_enemy_heli[0]+100 < enemy_heli.x+100:
-                if enemy_heli.y < hit_enemy_heli[1]+40 < enemy_heli.y+80 \
-                   or enemy_heli.y < hit_enemy_heli[1]+50 < enemy_heli.y+80:
+            if enemy_heli.x < hit_enemy_heli[0] + 90 < enemy_heli.x + 100 \
+                    or enemy_heli.x < hit_enemy_heli[0] + 100 < enemy_heli.x + 100:
+                if enemy_heli.y < hit_enemy_heli[1] + 40 < enemy_heli.y + 80 \
+                        or enemy_heli.y < hit_enemy_heli[1] + 50 < enemy_heli.y + 80:
                     if not enemy_heli.x > 600:
                         pygame.mixer.Sound.play(explosion2)
                         score += 150
@@ -569,10 +593,10 @@ def game_loop():
 
         # spaceship-player bullet/bomb collision detection
         for hit_spaceship in bullets:
-            if spaceship_x < hit_spaceship[0]+90 < spaceship_x+100 \
-               or spaceship_x < hit_spaceship[0]+100 < spaceship_x+100:
-                if spaceship_y < hit_spaceship[1]+40 < spaceship_y+80 \
-                   or spaceship_y < hit_spaceship[1]+50 < spaceship_y+80:
+            if spaceship_x < hit_spaceship[0] + 90 < spaceship_x + 100 \
+                    or spaceship_x < hit_spaceship[0] + 100 < spaceship_x + 100:
+                if spaceship_y < hit_spaceship[1] + 40 < spaceship_y + 80 \
+                        or spaceship_y < hit_spaceship[1] + 50 < spaceship_y + 80:
                     if not spaceship_x > 700:
                         pygame.mixer.Sound.play(explosion2)
                         bullets.remove(hit_spaceship)
@@ -583,10 +607,10 @@ def game_loop():
                         spaceship_y = random.randint(0, 400)
 
         for hit_spaceship in bombs:
-            if spaceship_x < hit_spaceship[0]+55 < spaceship_x+100 \
-               or spaceship_x < hit_spaceship[0]+65 < spaceship_x+100:
-                if spaceship_y < hit_spaceship[1]+70 < spaceship_y+80 \
-                   or spaceship_y < hit_spaceship[1]+80 < spaceship_y+80:
+            if spaceship_x < hit_spaceship[0] + 55 < spaceship_x + 100 \
+                    or spaceship_x < hit_spaceship[0] + 65 < spaceship_x + 100:
+                if spaceship_y < hit_spaceship[1] + 70 < spaceship_y + 80 \
+                        or spaceship_y < hit_spaceship[1] + 80 < spaceship_y + 80:
                     if not spaceship_x > 700:
                         pygame.mixer.Sound.play(explosion2)
                         bombs.remove(hit_spaceship)
@@ -598,8 +622,8 @@ def game_loop():
 
         # boat-player bullet/bomb collision detection
         for hit_boat in bullets:
-            if boat.x < hit_boat[0]+90 < boat.x+110 or boat.x < hit_spaceship[0]+100 < boat.x+110:
-                if boat.y < hit_boat[1]+40 < boat.y+70 or boat.y < hit_boat[1]+50 < boat.y+70:
+            if boat.x < hit_boat[0] + 90 < boat.x + 110 or boat.x < hit_spaceship[0] + 100 < boat.x + 110:
+                if boat.y < hit_boat[1] + 40 < boat.y + 70 or boat.y < hit_boat[1] + 50 < boat.y + 70:
                     if not boat.x > 780:
                         pygame.mixer.Sound.play(explosion2)
                         bullets.remove(hit_boat)
@@ -608,8 +632,8 @@ def game_loop():
                         boat.x = -110
 
         for hit_boat in bombs:
-            if boat.x < hit_boat[0]+55 < boat.x+110 or boat.x < hit_spaceship[0]+75 < boat.x+110:
-                if boat.y < hit_boat[1]+70 < boat.y+70 or boat.y < hit_boat[1]+90 < boat.y+70:
+            if boat.x < hit_boat[0] + 55 < boat.x + 110 or boat.x < hit_spaceship[0] + 75 < boat.x + 110:
+                if boat.y < hit_boat[1] + 70 < boat.y + 70 or boat.y < hit_boat[1] + 90 < boat.y + 70:
                     if not boat.x > 780:
                         pygame.mixer.Sound.play(explosion2)
                         bombs.remove(hit_boat)
@@ -618,17 +642,17 @@ def game_loop():
                         boat.x = -110
 
         # player-ballon collision detection
-        if balloon_x < player.x < balloon_x+70 or balloon_x < player.x+100 < balloon_x+70:
-            if balloon_y < player.y < balloon_y+80 or balloon_y < player.y+80 < balloon_y+80:
+        if balloon_x < player.x < balloon_x + 70 or balloon_x < player.x + 100 < balloon_x + 70:
+            if balloon_y < player.y < balloon_y + 80 or balloon_y < player.y + 80 < balloon_y + 80:
                 pygame.mixer.Sound.play(explosion)
                 player.damaged = True
                 player.health -= 1
-                balloon_x = 800-870
+                balloon_x = 800 - 870
 
         # player-enemy rocket collision detection
         for hit_player in enemy_heli.bullets:
-            if player.x < hit_player[0] < player.x+100 or player.x < hit_player[0]+40 < player.x+100:
-                if player.y < hit_player[1]+40 < player.y+80 or player.y < hit_player[1]+50 < player.y+80:
+            if player.x < hit_player[0] < player.x + 100 or player.x < hit_player[0] + 40 < player.x + 100:
+                if player.y < hit_player[1] + 40 < player.y + 80 or player.y < hit_player[1] + 50 < player.y + 80:
                     pygame.mixer.Sound.play(explosion)
                     player.damaged = True
                     player.health -= 1
@@ -636,8 +660,8 @@ def game_loop():
 
         # player-boat bullet collision detection
         for hit_player in boat.bullets:
-            if player.x < hit_player[0] < player.x+100 or player.x < hit_player[0]+20 < player.x+100:
-                if player.y < hit_player[1] < player.y+80 or player.y < hit_player[1]+20 < player.y+80:
+            if player.x < hit_player[0] < player.x + 100 or player.x < hit_player[0] + 20 < player.x + 100:
+                if player.y < hit_player[1] < player.y + 80 or player.y < hit_player[1] + 20 < player.y + 80:
                     pygame.mixer.Sound.play(explosion)
                     if not boat.boat_hit_player:
                         player.damaged = True
@@ -645,8 +669,8 @@ def game_loop():
                         boat.bullets.remove(hit_player)
 
         # player-boat collision detection
-        if boat.x < player.x < boat.x+110 or boat.x < player.x+100 < boat.x+110:
-            if boat.y < player.y < boat.y+70 or boat.y < player.y+80 < boat.y+70:
+        if boat.x < player.x < boat.x + 110 or boat.x < player.x + 100 < boat.x + 110:
+            if boat.y < player.y < boat.y + 70 or boat.y < player.y + 80 < boat.y + 70:
                 if not boat.boat_hit_player:
                     pygame.mixer.Sound.play(explosion)
                     player.damaged = True
@@ -654,8 +678,8 @@ def game_loop():
                     boat.boat_hit_player = True
 
         # player-spaceship collision detection
-        if spaceship_x < player.x < spaceship_x+100 or spaceship_x < player.x+100 < spaceship_x+100:
-            if spaceship_y < player.y < spaceship_y+88 or spaceship_y < player.y+80 < spaceship_y+88:
+        if spaceship_x < player.x < spaceship_x + 100 or spaceship_x < player.x + 100 < spaceship_x + 100:
+            if spaceship_y < player.y < spaceship_y + 88 or spaceship_y < player.y + 80 < spaceship_y + 88:
                 if not spaceship_hit_player:
                     pygame.mixer.Sound.play(explosion)
                     player.damaged = True
@@ -677,25 +701,25 @@ def game_loop():
         if score < highscore_int:
             hi_score_message = message_to_screen("HI-SCORE: {0}".format(highscore_int), font, 50, black)
         else:
-            highscore_file = open('highscore.dat', "w")
+            highscore_file = open(high_score, "w")
             highscore_file.write(str(score))
             highscore_file.close()
-            highscore_file = open('highscore.dat', "r")
+            highscore_file = open(high_score, "r")
             highscore_int = int(highscore_file.read())
             highscore_file.close()
             hi_score_message = message_to_screen("HI-SCORE: {0}".format(highscore_int), font, 50, yellow)
 
         hi_score_message_rect = hi_score_message.get_rect()
 
-        game_display.blit(hi_score_message, (800-hi_score_message_rect[2]-10, 10))
+        game_display.blit(hi_score_message, (800 - hi_score_message_rect[2] - 10, 10))
 
         # draw health
         if player.health >= 1:
             game_display.blit(sprites.icon, (10, 50))
             if player.health >= 2:
-                game_display.blit(sprites.icon, (10+32+10, 50))
+                game_display.blit(sprites.icon, (10 + 32 + 10, 50))
                 if player.health >= 3:
-                    game_display.blit(sprites.icon, (10+32+10+32+10, 50))
+                    game_display.blit(sprites.icon, (10 + 32 + 10 + 32 + 10, 50))
 
         # god-mode (for quicker testing)
         if godmode:
@@ -712,7 +736,6 @@ def game_loop():
 
 
 def pause():
-
     global highscore_file
     global highscore_int
 
@@ -726,7 +749,7 @@ def pause():
     paused_text = message_to_screen("PAUSED", font, 100, red)
     paused_text_rect = paused_text.get_rect()
 
-    game_display.blit(paused_text, (display_width/2 - (paused_text_rect[2]/2), 420))
+    game_display.blit(paused_text, (display_width / 2 - (paused_text_rect[2] / 2), 420))
 
     pygame.display.update()
     clock.tick(15)
@@ -735,7 +758,7 @@ def pause():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 if score > highscore_int:
-                    highscore_file = open('highscore.dat', "w")
+                    highscore_file = open(high_score, "w")
                     highscore_file.write(str(score))
                     highscore_file.close()
                 server.stop()
